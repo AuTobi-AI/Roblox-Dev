@@ -21,6 +21,11 @@ Roblox binary place files use the `.rbxl` extension. Generated builds are dispos
 - `default.project.json` — maps source files into the Roblox data model
 - `rokit.toml` — pinned toolchain versions
 - StyLua and Selene configuration for consistent formatting and linting
+- `docs/GAME_DESIGN.md` — authoritative full-game concept
+- `docs/AI_NPC_DESIGN.md` — bounded native-AI architecture and safety model
+- `docs/VERTICAL_SLICE.md` — the first production target and release gates
+- `docs/DECISIONS.md` — locked defaults and creative checkpoints
+- `docs/ROADMAP.md` — gated development sequence from AI spike through launch
 
 ## Testing a build
 
@@ -45,6 +50,6 @@ rojo build -o build/RobloxDev.rbxl
 
 Run `stylua src` to format source files. Generated `.rbxl` files belong in `build/` and are not committed. Successful GitHub Actions runs also publish the place as a downloadable `RobloxDev-place` artifact.
 
-## Next decision
+## Current phase
 
-The technical workspace is intentionally genre-neutral. Before expanding the starter scripts, define the game's core loop, player count, camera style, progression model, and first playable milestone.
+The project is in pre-production. The design package in `docs/` is authoritative. Implementation resumes with the native-AI policy/API spike and vertical slice only after the active creative checkpoints are settled.
