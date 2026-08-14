@@ -54,4 +54,4 @@ Run `stylua src` to format source files. Local generated `.rbxl` files belong in
 
 ## Current phase
 
-Production began with v0.3. The bounded dialogue architecture, native and simulated AI adapters, server-owned story/relationship foundations, safety controls, and cross-device conversation interface are implemented. The next milestone replaces the prototype woodland with the grayboxed Larkspur vertical-slice rooms and objectives.
+Version 0.4 is ready for graybox playtesting. The prototype woodland has been replaced by the complete Larkspur station route: Arrival, Reception, Observation, Utility, Archive Annex, service loop, and evacuation elevator. The server-owned objective flow includes the utility route choice, security and generator interactions, archive reconstruction, checkpoints, and a two-relay pursuit. Art, pacing, attachment conversations, and pursuit tuning remain intentionally graybox quality.

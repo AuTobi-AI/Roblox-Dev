@@ -56,6 +56,19 @@ local objectiveCorner = Instance.new("UICorner")
 objectiveCorner.CornerRadius = UDim.new(0, 10)
 objectiveCorner.Parent = objective
 
+local journal = Instance.new("TextLabel")
+journal.Name = "JournalStatus"
+journal.AnchorPoint = Vector2.new(0.5, 0)
+journal.BackgroundTransparency = 1
+journal.Position = UDim2.new(0.5, 0, 0.035, 50)
+journal.Size = UDim2.new(1, -40, 0, 22)
+journal.Font = Enum.Font.GothamMedium
+journal.Text = "ARRIVAL  ·  CHECKPOINT: ARRIVAL"
+journal.TextColor3 = Color3.fromRGB(133, 167, 173)
+journal.TextSize = 12
+journal.ZIndex = 3
+journal.Parent = gui
+
 local authoredDialogue = Instance.new("Frame")
 authoredDialogue.Name = "AuthoredDialogue"
 authoredDialogue.AnchorPoint = Vector2.new(0.5, 1)
@@ -276,5 +289,13 @@ storyRemote.OnClientEvent:Connect(function(kind: string, payload: any)
 		objective.TextColor3 = Color3.fromRGB(190, 255, 226)
 	elseif kind == "Timer" and typeof(payload) == "number" then
 		objective.Text = `SURVIVE — {payload}`
+	elseif kind == "Journal" and typeof(payload) == "table" then
+		journal.Text = `{string.upper(tostring(payload.phase))}  ·  CHECKPOINT: {string.upper(
+			tostring(payload.checkpoint)
+		)}`
+	elseif kind == "Complete" and typeof(payload) == "string" then
+		objective.Text = payload
+		objective.TextColor3 = Color3.fromRGB(190, 255, 226)
+		journal.Text = "SLICE COMPLETE"
 	end
 end)

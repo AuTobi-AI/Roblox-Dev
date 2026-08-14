@@ -45,7 +45,7 @@ function CompanionService.create(): Controller
 	root.Size = Vector3.new(5, 5, 5)
 	root.Color = FRIENDLY_COLOR
 	root.Material = Enum.Material.Neon
-	root.CFrame = CFrame.new(0, 5, -15)
+	root.CFrame = CFrame.new(-46, 5, 25)
 	root.Parent = model
 	model.PrimaryPart = root
 
