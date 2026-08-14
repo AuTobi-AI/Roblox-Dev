@@ -24,7 +24,7 @@ local COLORS = {
 }
 
 export type SubmitKind = "typed" | "suggested"
-export type ResponseSource = "NATIVE AI" | "SIMULATED AI" | "FALLBACK"
+export type ResponseSource = "NATIVE AI" | "SIMULATED AI" | "FALLBACK" | "AUTHORED"
 export type Delivery = "warm" | "curious" | "uneasy" | "hurt" | "flat"
 export type StatusTone = "neutral" | "success" | "error"
 
@@ -59,6 +59,7 @@ type PrivatePanel = {
 	_isUpdatingInput: boolean,
 	_statusText: string,
 	_statusTone: StatusTone,
+	_history: { string },
 	_onSubmit: ((message: string, kind: SubmitKind, suggestionIndex: number?) -> ())?,
 	_onClose: (() -> ())?,
 }
@@ -314,17 +315,17 @@ function ConversationPanel.new(parent: Instance, options: Options?): Conversatio
 	configureTextLabel(lineLabel)
 	lineLabel.Name = "MorrowLine"
 	lineLabel.Position = UDim2.fromOffset(18, 52)
-	lineLabel.Size = UDim2.new(1, -36, 0, 58)
+	lineLabel.Size = UDim2.new(1, -36, 0, 116)
 	lineLabel.Text = "…"
 	lineLabel.TextSize = 17
-	lineLabel.TextYAlignment = Enum.TextYAlignment.Top
+	lineLabel.TextYAlignment = Enum.TextYAlignment.Bottom
 	lineLabel.ZIndex = 21
 	lineLabel.Parent = root
 
 	local disclosureLabel = Instance.new("TextLabel")
 	configureTextLabel(disclosureLabel)
 	disclosureLabel.Name = "AIDisclosure"
-	disclosureLabel.Position = UDim2.fromOffset(18, 111)
+	disclosureLabel.Position = UDim2.fromOffset(18, 171)
 	disclosureLabel.Size = UDim2.new(1, -36, 0, 43)
 	disclosureLabel.Text = panelOptions.DisclosureText or DEFAULT_DISCLOSURE
 	disclosureLabel.TextColor3 = COLORS.muted
@@ -336,7 +337,7 @@ function ConversationPanel.new(parent: Instance, options: Options?): Conversatio
 	local statusLabel = Instance.new("TextLabel")
 	configureTextLabel(statusLabel)
 	statusLabel.Name = "Status"
-	statusLabel.Position = UDim2.fromOffset(18, 157)
+	statusLabel.Position = UDim2.fromOffset(18, 216)
 	statusLabel.Size = UDim2.new(1, -36, 0, 22)
 	statusLabel.Text = DEFAULT_STATUS
 	statusLabel.TextColor3 = COLORS.muted
@@ -462,6 +463,7 @@ function ConversationPanel.new(parent: Instance, options: Options?): Conversatio
 			_isUpdatingInput = false,
 			_statusText = DEFAULT_STATUS,
 			_statusTone = "neutral",
+			_history = {},
 			_onSubmit = panelOptions.OnSubmit,
 			_onClose = panelOptions.OnClose,
 		} :: PrivatePanel,
@@ -560,8 +562,26 @@ end
 
 function ConversationPanel:SetLine(line: string, delivery: Delivery?)
 	local capped = capUtf8(line, 180)
-	self._lineLabel.Text = capped
+	table.insert(self._history, `MORROW: {capped}`)
+	while #self._history > 3 do
+		table.remove(self._history, 1)
+	end
+	self._lineLabel.Text = table.concat(self._history, "\n")
 	self._lineLabel.TextColor3 = deliveryColor(delivery)
+end
+
+function ConversationPanel:AddPlayerLine(line: string)
+	local capped = capUtf8(line, self._maxInputCharacters)
+	table.insert(self._history, `YOU: {capped}`)
+	while #self._history > 3 do
+		table.remove(self._history, 1)
+	end
+	self._lineLabel.Text = table.concat(self._history, "\n")
+end
+
+function ConversationPanel:ResetTranscript()
+	table.clear(self._history)
+	self._lineLabel.Text = ""
 end
 
 function ConversationPanel:SetResponseSource(source: ResponseSource)
@@ -570,6 +590,8 @@ function ConversationPanel:SetResponseSource(source: ResponseSource)
 		self._sourceBadge.TextColor3 = COLORS.accent
 	elseif source == "FALLBACK" then
 		self._sourceBadge.TextColor3 = Color3.fromRGB(226, 197, 145)
+	elseif source == "AUTHORED" then
+		self._sourceBadge.TextColor3 = Color3.fromRGB(190, 205, 209)
 	else
 		self._sourceBadge.TextColor3 = COLORS.muted
 	end

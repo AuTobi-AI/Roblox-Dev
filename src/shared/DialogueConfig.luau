@@ -1,6 +1,11 @@
 --!strict
 
 local windows = table.freeze({
+	containment = table.freeze({
+		maxTurns = 4,
+		posture = "attentive at first, then increasingly afraid of being left alone",
+		fallbackIntent = "containment",
+	}),
 	awakening = table.freeze({
 		maxTurns = 3,
 		posture = "curious and cautiously charming",
@@ -25,7 +30,7 @@ local windows = table.freeze({
 
 return table.freeze({
 	ProtocolVersion = 1,
-	PromptVersion = "morrow-dialogue-v1",
+	PromptVersion = "morrow-containment-v2",
 
 	-- Downloaded places use deterministic simulated replies until a private universe is configured.
 	DefaultPreferNative = false,
@@ -38,8 +43,8 @@ return table.freeze({
 	MaxOutputCharacters = 180,
 	MaxNonceCharacters = 64,
 	MaxContextTokenBytes = 16384,
-	CooldownSeconds = 6,
-	WindowLifetimeSeconds = 90,
+	CooldownSeconds = 2.5,
+	WindowLifetimeSeconds = 600,
 	SoftWatchdogSeconds = 8,
 	MaxTurnsPerWindow = 4,
 	MaxTurnsPerRun = 12,

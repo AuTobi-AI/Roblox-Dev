@@ -7,6 +7,7 @@ export type Controller = {
 	root: Part,
 	prompt: ProximityPrompt,
 	setTarget: (position: Vector3) -> (),
+	setPosition: (position: Vector3) -> (),
 	setHunting: (value: boolean) -> (),
 	setThinking: (value: boolean) -> (),
 	destroy: () -> (),
@@ -31,7 +32,7 @@ local function makeFacePart(parent: Model, name: string, size: Vector3): Part
 	return item
 end
 
-function CompanionService.create(): Controller
+function CompanionService.create(startPosition: Vector3?): Controller
 	local model = Instance.new("Model")
 	model.Name = "Morrow"
 	model.Parent = workspace
@@ -41,13 +42,27 @@ function CompanionService.create(): Controller
 	root.Anchored = true
 	root.CanCollide = false
 	root.CanQuery = false
-	root.Shape = Enum.PartType.Ball
-	root.Size = Vector3.new(5, 5, 5)
+	root.Size = Vector3.new(5, 1.8, 1.8)
 	root.Color = FRIENDLY_COLOR
 	root.Material = Enum.Material.Neon
-	root.CFrame = CFrame.new(-46, 5, 25)
+	root.CFrame = CFrame.new(startPosition or Vector3.new(0, 5, -11))
 	root.Parent = model
 	model.PrimaryPart = root
+
+	local leftBell = Instance.new("Part")
+	leftBell.Name = "LeftBell"
+	leftBell.Anchored = true
+	leftBell.CanCollide = false
+	leftBell.CanQuery = false
+	leftBell.Shape = Enum.PartType.Ball
+	leftBell.Size = Vector3.new(1.8, 2.7, 2.4)
+	leftBell.Color = FRIENDLY_COLOR
+	leftBell.Material = Enum.Material.SmoothPlastic
+	leftBell.Parent = model
+
+	local rightBell = leftBell:Clone()
+	rightBell.Name = "RightBell"
+	rightBell.Parent = model
 
 	local glow = Instance.new("PointLight")
 	glow.Name = "Glow"
@@ -113,7 +128,9 @@ function CompanionService.create(): Controller
 			CFrame.new(logicalPosition + Vector3.new(0, math.sin(elapsed * 2.2) * 0.08, 0))
 
 		local forward, right = root.CFrame.LookVector, root.CFrame.RightVector
-		local faceCenter = root.Position + forward * 2.35
+		leftBell.CFrame = root.CFrame * CFrame.new(-2.35, 0, 0)
+		rightBell.CFrame = root.CFrame * CFrame.new(2.35, 0, 0)
+		local faceCenter = root.Position + forward * 0.95
 		leftEye.CFrame =
 			CFrame.lookAt(faceCenter - right * 0.75 + Vector3.new(0, 0.55, 0), faceCenter + forward)
 		rightEye.CFrame =
@@ -128,10 +145,16 @@ function CompanionService.create(): Controller
 		setTarget = function(position: Vector3)
 			targetPosition = position
 		end,
+		setPosition = function(position: Vector3)
+			logicalPosition = position
+			targetPosition = position
+		end,
 		setHunting = function(value: boolean)
 			isHunting = value
 			prompt.Enabled = not value
 			root.Color = if value then HUNT_COLOR else FRIENDLY_COLOR
+			leftBell.Color = root.Color
+			rightBell.Color = root.Color
 			glow.Color = root.Color
 			glow.Brightness = if value then 3 else 1.4
 			smile.Size = if value

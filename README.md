@@ -54,4 +54,4 @@ Run `stylua src` to format source files. Local generated `.rbxl` files belong in
 
 ## Current phase
 
-Version 0.4 is ready for graybox playtesting. The prototype woodland has been replaced by the complete Larkspur station route: Arrival, Reception, Observation, Utility, Archive Annex, service loop, and evacuation elevator. The server-owned objective flow includes the utility route choice, security and generator interactions, archive reconstruction, checkpoints, and a two-relay pursuit. Art, pacing, attachment conversations, and pursuit tuning remain intentionally graybox quality.
+Version 0.5 resets the project around **Morrow: Don't Hang Up**. Morrow inhabits a portable station receiver: talk naturally while connected, unplug and carry it through the dark, reconnect without losing conversational context, uncover the prior call, and survive an inevitable breakdown shaped by kindness or hostility. There are no dialogue choices or console-button route. See [docs/GIMMICK_CONCEPT.md](docs/GIMMICK_CONCEPT.md).

@@ -139,7 +139,8 @@ for index = 1, 2 do
 end
 
 local activeGrant: any = nil
-local conversation = ConversationPanel.new(gui, {
+local conversation: ConversationPanel.ConversationPanel
+conversation = ConversationPanel.new(gui, {
 	InternalBuild = GameConfig.InternalBuild,
 	MaxInputCharacters = DialogueConfig.MaxInputCharacters,
 	DisclosureText = DialogueConfig.Disclosure,
@@ -148,6 +149,7 @@ local conversation = ConversationPanel.new(gui, {
 		if typeof(grant) ~= "table" then
 			return
 		end
+		conversation:AddPlayerLine(message)
 		dialogueSubmitRemote:FireServer({
 			protocolVersion = DialogueProtocol.Version,
 			windowId = grant.windowId,
@@ -191,15 +193,6 @@ local function sourceLabel(source: string): ConversationPanel.ResponseSource
 	return "SIMULATED AI"
 end
 
-local function nextSuggestions(turnsRemaining: number): { string }
-	if turnsRemaining >= 2 then
-		return { "What do you remember?", "Are you lonely?" }
-	elseif turnsRemaining == 1 then
-		return { "Do you want to come with me?", "Can I trust you?" }
-	end
-	return {}
-end
-
 dialogueClientRemote.OnClientEvent:Connect(function(packet: any)
 	if typeof(packet) ~= "table" or typeof(packet.kind) ~= "string" then
 		return
@@ -207,13 +200,12 @@ dialogueClientRemote.OnClientEvent:Connect(function(packet: any)
 
 	if packet.kind == "open" and typeof(packet.grant) == "table" then
 		activeGrant = packet.grant
+		conversation:ResetTranscript()
 		conversation:SetLine(tostring(packet.line), "curious")
-		conversation:SetSuggestions(
-			if typeof(packet.suggestions) == "table" then packet.suggestions else {}
-		)
-		conversation:SetResponseSource(if game.GameId == 0 then "SIMULATED AI" else "NATIVE AI")
+		conversation:SetSuggestions({})
+		conversation:SetResponseSource("AUTHORED")
 		conversation:SetInputEnabled(true)
-		conversation:SetThinking(false, "Choose a reply or type your own.")
+		conversation:SetThinking(false, "Type whatever you genuinely want to say.")
 		conversation:Show()
 		conversation:FocusInput()
 	elseif packet.kind == "reply" and activeGrant then
@@ -228,12 +220,10 @@ dialogueClientRemote.OnClientEvent:Connect(function(packet: any)
 		local turnsRemaining = if typeof(packet.turnsRemaining) == "number"
 			then packet.turnsRemaining
 			else 0
-		conversation:SetSuggestions(nextSuggestions(turnsRemaining))
+		conversation:SetSuggestions({})
 		conversation:SetInputEnabled(turnsRemaining > 0)
 		conversation:SetStatus(
-			if turnsRemaining > 0
-				then `{turnsRemaining} conversation replies remain.`
-				else "Morrow is quiet.",
+			if turnsRemaining > 0 then "Morrow is listening." else "Morrow is quiet.",
 			"success"
 		)
 	elseif packet.kind == "reject" then
@@ -255,6 +245,13 @@ dialogueClientRemote.OnClientEvent:Connect(function(packet: any)
 	elseif packet.kind == "complete" then
 		activeGrant = nil
 		conversation:Hide()
+	elseif packet.kind == "breakdown" then
+		activeGrant = nil
+		conversation:SetInputEnabled(false)
+		conversation:SetStatus("THE LINE WILL NOT DISCONNECT", "error")
+		task.delay(2.5, function()
+			conversation:Hide()
+		end)
 	end
 end)
 
@@ -284,6 +281,10 @@ storyRemote.OnClientEvent:Connect(function(kind: string, payload: any)
 	elseif kind == "Phase" and payload == "Hunt" then
 		huntTint.BackgroundTransparency = 0.82
 		objective.TextColor3 = Color3.fromRGB(255, 196, 205)
+	elseif kind == "Phase" and typeof(payload) == "table" and payload.name == "Breakdown" then
+		huntTint.BackgroundTransparency = if payload.style == "Devotion" then 0.9 else 0.8
+		objective.TextColor3 = Color3.fromRGB(255, 196, 205)
+		journal.Text = `BREAKDOWN // {string.upper(tostring(payload.style))}`
 	elseif kind == "Phase" and payload == "Escaped" then
 		huntTint.BackgroundTransparency = 1
 		objective.TextColor3 = Color3.fromRGB(190, 255, 226)

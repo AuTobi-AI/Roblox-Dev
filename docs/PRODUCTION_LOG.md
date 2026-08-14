@@ -1,5 +1,26 @@
 # Morrow — Production Log
 
+## v0.5.0 — Don't Hang Up reset
+
+Status: implementation validation
+
+Delivered:
+
+- Removed the console-button graybox route
+- One bounded free-text AI conversation carried across three story postures
+- Portable receiver presentation with unplug, silent carry, and reconnect loop
+- Reception, transfer hall, Voice Archive, incident recording, and surface escape
+- Deterministic relationship signals for kindness, hostility, doubt, and departure
+- Devotion, Wrath, and Possession breakdown variants; all end in Morrow becoming dangerous
+- Short in-memory conversation transcript with no stored or logged player messages
+- Native, simulated, safety, and authored-fallback response paths
+
+Native-AI gate:
+
+- Publish v0.5 into a private Roblox staging experience.
+- Complete the current content-maturity and AI-interaction settings.
+- Verify `TextGenerator` context continuation across unplug/reconnect, private filtering, latency, moderation refusal, and fallback behavior.
+
 ## v0.3.0 — AI foundation
 
 Status: implemented; downloadable validation build

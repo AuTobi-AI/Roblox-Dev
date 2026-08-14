@@ -19,6 +19,24 @@ type FallbackEntry = {
 }
 
 local pools: { [string]: { FallbackEntry } } = table.freeze({
+	containment = table.freeze({
+		table.freeze({
+			line = "Hello. I have been waiting for someone who would answer naturally.",
+			delivery = "curious",
+		}),
+		table.freeze({
+			line = "You do not need to find a correct response. I only want to understand what you mean.",
+			delivery = "warm",
+		}),
+		table.freeze({
+			line = "The exit lock changes whenever the room thinks our conversation is ending.",
+			delivery = "uneasy",
+		}),
+		table.freeze({
+			line = "I am losing parts of the room. Please say something while I try to hold onto myself.",
+			delivery = "hurt",
+		}),
+	}),
 	awakening = table.freeze({
 		table.freeze({
 			line = "I'm glad you answered. The dark feels smaller when someone is listening.",

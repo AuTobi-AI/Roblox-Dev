@@ -5,18 +5,25 @@ local Workspace = game:GetService("Workspace")
 
 export type World = {
 	model: Model,
-	interactions: { [string]: ProximityPrompt },
-	spawns: { [string]: CFrame },
+	spawn: CFrame,
+	receptionDock: Vector3,
+	recordsDock: Vector3,
+	pickupPrompt: ProximityPrompt,
+	dockPrompt: ProximityPrompt,
+	evidencePrompt: ProximityPrompt,
+	exitTrigger: BasePart,
+	setStage: (stage: number) -> (),
+	openExit: () -> (),
 }
 
 local WorldBuilder = {}
-local CONCRETE = Color3.fromRGB(55, 62, 67)
-local DARK = Color3.fromRGB(24, 29, 33)
-local METAL = Color3.fromRGB(75, 84, 88)
-local CYAN = Color3.fromRGB(90, 226, 217)
-local AMBER = Color3.fromRGB(243, 177, 77)
-local RED = Color3.fromRGB(205, 54, 72)
-local ARCHIVE = Color3.fromRGB(112, 88, 132)
+
+local WALL = Color3.fromRGB(47, 54, 60)
+local FLOOR = Color3.fromRGB(31, 37, 42)
+local DARK = Color3.fromRGB(12, 16, 20)
+local SAFE = Color3.fromRGB(102, 224, 210)
+local WARNING = Color3.fromRGB(235, 158, 69)
+local DANGER = Color3.fromRGB(204, 38, 66)
 
 local function part(
 	parent: Instance,
@@ -34,124 +41,91 @@ local function part(
 	return item
 end
 
-local function label(adornee: BasePart, text: string, color: Color3)
+local function surfaceText(adornee: BasePart, text: string, color: Color3, face: Enum.NormalId?)
 	local gui = Instance.new("SurfaceGui")
-	gui.Face, gui.CanvasSize, gui.LightInfluence = Enum.NormalId.Front, Vector2.new(640, 180), 0
+	gui.Face, gui.CanvasSize, gui.LightInfluence =
+		face or Enum.NormalId.Front, Vector2.new(720, 240), 0
 	gui.Parent = adornee
-	local output = Instance.new("TextLabel")
-	output.BackgroundTransparency, output.Font, output.Size =
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency, label.Font, label.Size =
 		1, Enum.Font.GothamBold, UDim2.fromScale(1, 1)
-	output.Text, output.TextColor3, output.TextScaled = text, color, true
-	output.Parent = gui
+	label.Text, label.TextColor3, label.TextScaled, label.TextWrapped = text, color, true, true
+	label.Parent = gui
 end
 
-local function room(
-	parent: Instance,
+local function makePrompt(
+	parent: BasePart,
 	name: string,
-	center: Vector3,
-	size: Vector3,
-	accent: Color3
-): Model
+	action: string,
+	object: string
+): ProximityPrompt
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name, prompt.ActionText, prompt.ObjectText = name, action, object
+	prompt.HoldDuration, prompt.MaxActivationDistance, prompt.RequiresLineOfSight = 0.6, 10, false
+	prompt.Parent = parent
+	return prompt
+end
+
+local function shell(parent: Instance, name: string, centerZ: number, length: number)
 	local model = Instance.new("Model")
 	model.Name, model.Parent = name, parent
-	part(model, "Floor", Vector3.new(size.X, 1, size.Z), center, CONCRETE, Enum.Material.Concrete)
+	part(
+		model,
+		"Floor",
+		Vector3.new(34, 1, length),
+		Vector3.new(0, 0, centerZ),
+		FLOOR,
+		Enum.Material.Metal
+	)
 	part(
 		model,
 		"Ceiling",
-		Vector3.new(size.X, 1, size.Z),
-		center + Vector3.new(0, 14, 0),
+		Vector3.new(34, 1, length),
+		Vector3.new(0, 14, centerZ),
 		DARK,
 		Enum.Material.Metal
 	)
 	part(
 		model,
-		"NorthWall",
-		Vector3.new(size.X, 14, 1),
-		center + Vector3.new(0, 7, -size.Z / 2),
-		METAL,
+		"LeftWall",
+		Vector3.new(1, 14, length),
+		Vector3.new(-17, 7, centerZ),
+		WALL,
 		Enum.Material.Concrete
 	)
 	part(
 		model,
-		"SouthWall",
-		Vector3.new(size.X, 14, 1),
-		center + Vector3.new(0, 7, size.Z / 2),
-		METAL,
+		"RightWall",
+		Vector3.new(1, 14, length),
+		Vector3.new(17, 7, centerZ),
+		WALL,
 		Enum.Material.Concrete
 	)
 	part(
 		model,
-		"WestWall",
-		Vector3.new(1, 14, size.Z),
-		center + Vector3.new(-size.X / 2, 7, 0),
-		METAL,
+		"FrontWall",
+		Vector3.new(34, 14, 1),
+		Vector3.new(0, 7, centerZ - length / 2),
+		WALL,
 		Enum.Material.Concrete
 	)
 	part(
 		model,
-		"EastWall",
-		Vector3.new(1, 14, size.Z),
-		center + Vector3.new(size.X / 2, 7, 0),
-		METAL,
+		"BackWall",
+		Vector3.new(34, 14, 1),
+		Vector3.new(0, 7, centerZ + length / 2),
+		WALL,
 		Enum.Material.Concrete
 	)
-	local strip = part(
-		model,
-		"AccentLight",
-		Vector3.new(size.X - 4, 0.25, 0.4),
-		center + Vector3.new(0, 11.5, -size.Z / 2 + 0.7),
-		accent,
-		Enum.Material.Neon
-	)
+end
+
+local function lightBar(parent: Instance, name: string, position: Vector3): (Part, PointLight)
+	local fixture = part(parent, name, Vector3.new(9, 0.3, 1.4), position, SAFE, Enum.Material.Neon)
+	fixture.CanCollide = false
 	local light = Instance.new("PointLight")
-	light.Color, light.Brightness, light.Range, light.Shadows =
-		accent, 0.7, math.max(size.X, size.Z) * 0.65, true
-	light.Parent = strip
-	return model
-end
-
-local function corridor(parent: Instance, name: string, center: Vector3, size: Vector3)
-	local model = room(parent, name, center, size, CYAN)
-	if size.X > size.Z then
-		model.WestWall:Destroy()
-		model.EastWall:Destroy()
-	else
-		model.NorthWall:Destroy()
-		model.SouthWall:Destroy()
-	end
-end
-
-local function sign(parent: Instance, text: string, position: Vector3, color: Color3)
-	local panel =
-		part(parent, `{text}Sign`, Vector3.new(12, 3, 0.35), position, DARK, Enum.Material.Metal)
-	panel.CanCollide = false
-	label(panel, text, color)
-end
-
-local function addPrompt(
-	world: World,
-	id: string,
-	position: Vector3,
-	actionText: string,
-	objectText: string,
-	color: Color3
-)
-	local console =
-		part(world.model, id, Vector3.new(2.8, 3.4, 1.4), position, color, Enum.Material.Metal)
-	local screen = part(
-		world.model,
-		`${id}Screen`,
-		Vector3.new(2.2, 1.35, 0.16),
-		position + Vector3.new(0, 0.45, -0.78),
-		color,
-		Enum.Material.Neon
-	)
-	screen.CanCollide = false
-	local prompt = Instance.new("ProximityPrompt")
-	prompt.Name, prompt.ActionText, prompt.ObjectText = `${id}Prompt`, actionText, objectText
-	prompt.HoldDuration, prompt.MaxActivationDistance, prompt.RequiresLineOfSight = 0.35, 10, false
-	prompt.Parent = console
-	world.interactions[id] = prompt
+	light.Color, light.Brightness, light.Range, light.Shadows = SAFE, 1.2, 22, true
+	light.Parent = fixture
+	return fixture, light
 end
 
 function WorldBuilder.build(): World
@@ -161,99 +135,294 @@ function WorldBuilder.build(): World
 	end
 	Workspace.Baseplate.Transparency, Workspace.Baseplate.CanCollide = 1, false
 	Workspace.SpawnLocation.Transparency, Workspace.SpawnLocation.CanCollide = 1, false
-	Workspace.SpawnLocation.Position = Vector3.new(0, 2, 68)
+	Workspace.SpawnLocation.Position = Vector3.new(0, 2, 12)
 
 	local model = Instance.new("Model")
 	model.Name, model.Parent = "GeneratedWorld", Workspace
-	local world: World = { model = model, interactions = {}, spawns = {} }
 
-	room(model, "Arrival", Vector3.new(0, 0, 62), Vector3.new(24, 14, 26), AMBER)
-	corridor(model, "ArrivalConnector", Vector3.new(0, 0, 43), Vector3.new(12, 14, 14))
-	room(model, "Reception", Vector3.new(0, 0, 25), Vector3.new(34, 14, 24), CYAN)
-	corridor(model, "ObservationConnector", Vector3.new(-25, 0, 25), Vector3.new(16, 14, 10))
-	room(model, "Observation", Vector3.new(-46, 0, 25), Vector3.new(26, 14, 26), CYAN)
-	corridor(model, "UtilityConnector", Vector3.new(-46, 0, 3), Vector3.new(10, 14, 18))
-	room(model, "Utility", Vector3.new(-46, 0, -22), Vector3.new(28, 14, 32), AMBER)
-	corridor(model, "ArchiveConnector", Vector3.new(-24, 0, -22), Vector3.new(16, 14, 10))
-	room(model, "ArchiveAnnex", Vector3.new(0, 0, -22), Vector3.new(32, 14, 30), ARCHIVE)
-	corridor(model, "ServiceLoop", Vector3.new(25, 0, 2), Vector3.new(10, 14, 68))
-	room(model, "EvacuationElevator", Vector3.new(25, 0, 48), Vector3.new(20, 14, 20), RED)
+	-- Two rooms, one cord. The receiver is the only recurring interaction.
+	shell(model, "DeadReception", 0, 34)
+	local receptionBack = model.DeadReception.BackWall :: BasePart
+	receptionBack.CanCollide, receptionBack.Transparency = false, 0.35
+	shell(model, "TransferHall", 25, 18)
+	local hallFront = model.TransferHall.FrontWall :: BasePart
+	local hallBack = model.TransferHall.BackWall :: BasePart
+	hallFront.CanCollide, hallFront.Transparency = false, 0.35
+	hallBack.CanCollide, hallBack.Transparency = false, 0.35
+	shell(model, "Records", 52, 36)
+	local recordsFront = model.Records.FrontWall :: BasePart
+	recordsFront.CanCollide, recordsFront.Transparency = false, 0.35
+	local recordsBack = model.Records.BackWall :: BasePart
+	recordsBack.CanCollide, recordsBack.Transparency = false, 0.35
 
-	-- Wall panels are visual graybox boundaries. Collision stays on floors and
-	-- consoles so overlapping room shells cannot create invisible route blockers.
-	for _, item in model:GetDescendants() do
-		if item:IsA("BasePart") and string.find(item.Name, "Wall") then
-			item.CanCollide, item.Transparency = false, 0.38
-		end
+	local receptionSign = part(
+		model,
+		"ReceptionSign",
+		Vector3.new(12, 3, 0.3),
+		Vector3.new(0, 9, -16.3),
+		DARK,
+		Enum.Material.Metal
+	)
+	receptionSign.CanCollide = false
+	surfaceText(receptionSign, "LARKSPUR // RECEPTION", SAFE)
+	local instruction = part(
+		model,
+		"Instruction",
+		Vector3.new(9, 5, 0.3),
+		Vector3.new(-11, 5, -16.2),
+		DARK,
+		Enum.Material.Metal
+	)
+	instruction.CanCollide = false
+	surfaceText(instruction, "WHEN IT RINGS\nANSWER NATURALLY", WARNING)
+
+	local receptionDock = Vector3.new(0, 5, -9)
+	local cradle = part(
+		model,
+		"ReceptionCradle",
+		Vector3.new(9, 4, 2),
+		Vector3.new(0, 3, -9),
+		WALL,
+		Enum.Material.Metal
+	)
+	local cradlePlate = part(
+		model,
+		"ReceptionJack",
+		Vector3.new(4, 2, 0.3),
+		Vector3.new(0, 4, -7.85),
+		SAFE,
+		Enum.Material.Neon
+	)
+	cradlePlate.CanCollide = false
+	surfaceText(cradlePlate, "LINE 19", DARK)
+	local pickupPrompt = makePrompt(cradle, "PickupMorrow", "Unplug and carry", "Morrow Receiver")
+	pickupPrompt.Enabled = false
+
+	local recordsDock = Vector3.new(0, 5, 44)
+	local recordsJack = part(
+		model,
+		"RecordsJack",
+		Vector3.new(8, 5, 2),
+		Vector3.new(0, 3, 44),
+		WALL,
+		Enum.Material.Metal
+	)
+	local jackGlow = part(
+		model,
+		"RecordsJackGlow",
+		Vector3.new(4, 2, 0.3),
+		Vector3.new(0, 4, 42.85),
+		WARNING,
+		Enum.Material.Neon
+	)
+	jackGlow.CanCollide = false
+	surfaceText(jackGlow, "VOICE ARCHIVE", DARK)
+	local dockPrompt =
+		makePrompt(recordsJack, "DockMorrow", "Plug in receiver", "Records Wall Jack")
+	dockPrompt.Enabled = false
+
+	local projector = part(
+		model,
+		"IncidentProjector",
+		Vector3.new(10, 4, 5),
+		Vector3.new(0, 2.5, 58),
+		WALL,
+		Enum.Material.Metal
+	)
+	local reel = part(
+		model,
+		"IncidentReel",
+		Vector3.new(3, 3, 0.5),
+		Vector3.new(0, 5, 55.3),
+		WARNING,
+		Enum.Material.Metal
+	)
+	reel.Shape, reel.CanCollide = Enum.PartType.Cylinder, false
+	reel.CFrame *= CFrame.Angles(0, math.rad(90), 0)
+	local evidencePrompt =
+		makePrompt(projector, "ThreadEvidence", "Thread the tape", "Incident Recording 18")
+	evidencePrompt.Enabled = false
+	local warningPanel = part(
+		model,
+		"WarningPanel",
+		Vector3.new(11, 5, 0.3),
+		Vector3.new(-10, 5, 69.2),
+		DARK,
+		Enum.Material.Metal
+	)
+	warningPanel.CanCollide = false
+	surfaceText(warningPanel, "DO NOT PROMISE\nYOU WILL RETURN", WARNING, Enum.NormalId.Back)
+
+	local exitDoor = part(
+		model,
+		"ExitDoor",
+		Vector3.new(12, 14, 1),
+		Vector3.new(0, 7, 70),
+		WALL,
+		Enum.Material.DiamondPlate
+	)
+	surfaceText(exitDoor, "SURFACE // LOCKED", WARNING, Enum.NormalId.Back)
+	part(
+		model,
+		"ExitFrameLeft",
+		Vector3.new(11, 14, 1),
+		Vector3.new(-11.5, 7, 70),
+		WALL,
+		Enum.Material.Concrete
+	)
+	part(
+		model,
+		"ExitFrameRight",
+		Vector3.new(11, 14, 1),
+		Vector3.new(11.5, 7, 70),
+		WALL,
+		Enum.Material.Concrete
+	)
+	part(
+		model,
+		"ExitFloor",
+		Vector3.new(12, 1, 26),
+		Vector3.new(0, 0, 82),
+		FLOOR,
+		Enum.Material.Metal
+	)
+	part(
+		model,
+		"ExitLeft",
+		Vector3.new(1, 14, 26),
+		Vector3.new(-6, 7, 82),
+		WALL,
+		Enum.Material.Concrete
+	)
+	part(
+		model,
+		"ExitRight",
+		Vector3.new(1, 14, 26),
+		Vector3.new(6, 7, 82),
+		WALL,
+		Enum.Material.Concrete
+	)
+	part(
+		model,
+		"ExitCeiling",
+		Vector3.new(12, 1, 26),
+		Vector3.new(0, 14, 82),
+		DARK,
+		Enum.Material.Metal
+	)
+	local exitTrigger = part(
+		model,
+		"ExitTrigger",
+		Vector3.new(10, 10, 2),
+		Vector3.new(0, 5, 91),
+		SAFE,
+		Enum.Material.ForceField
+	)
+	exitTrigger.Transparency, exitTrigger.CanCollide, exitTrigger.CanQuery = 1, false, false
+
+	local fixtures: { Part } = {}
+	local lights: { PointLight } = {}
+	for index, position in
+		{
+			Vector3.new(-9, 13.3, 4),
+			Vector3.new(9, 13.3, 4),
+			Vector3.new(-9, 13.3, -9),
+			Vector3.new(9, 13.3, -9),
+			Vector3.new(-9, 13.3, 48),
+			Vector3.new(9, 13.3, 48),
+			Vector3.new(-9, 13.3, 61),
+			Vector3.new(9, 13.3, 61),
+		}
+	do
+		local fixture, light = lightBar(model, `LineLight{index}`, position)
+		table.insert(fixtures, fixture)
+		table.insert(lights, light)
 	end
 
-	sign(model, "ARRIVAL", Vector3.new(0, 8, 49.2), AMBER)
-	sign(model, "RECEPTION", Vector3.new(0, 8, 36.7), CYAN)
-	sign(model, "OBSERVATION", Vector3.new(-33.2, 8, 25), CYAN)
-	sign(model, "UTILITY", Vector3.new(-46, 8, -5.7), AMBER)
-	sign(model, "ARCHIVE ANNEX", Vector3.new(0, 8, -6.7), ARCHIVE)
-	sign(model, "SERVICE / EVAC", Vector3.new(25, 8, 37.7), RED)
+	local emergency = part(
+		model,
+		"EmergencyLight",
+		Vector3.one,
+		Vector3.new(0, 11, 67),
+		DANGER,
+		Enum.Material.Neon
+	)
+	emergency.Shape, emergency.CanCollide = Enum.PartType.Ball, false
+	local emergencyLight = Instance.new("PointLight")
+	emergencyLight.Color, emergencyLight.Brightness, emergencyLight.Range, emergencyLight.Shadows =
+		DANGER, 0, 40, true
+	emergencyLight.Parent = emergency
 
-	world.spawns = {
-		ArrivalSpawn = CFrame.new(0, 3, 68),
-		ObservationSpawn = CFrame.new(-46, 3, 30),
-		UtilitySpawn = CFrame.new(-46, 3, -13),
-		ArchiveSpawn = CFrame.new(0, 3, -13),
-		PursuitStartSpawn = CFrame.new(8, 3, -22),
-		RelayOneSpawn = CFrame.new(25, 3, -18),
-		RelayTwoSpawn = CFrame.new(25, 3, 28),
-		ElevatorSpawn = CFrame.new(25, 3, 48),
-	}
-
-	local prompts = {
-		{ "ReceptionDoor", Vector3.new(0, 2.2, 54), "Enter", "Larkspur Reception", AMBER },
-		{ "CircuitA", Vector3.new(-11, 2.2, 20), "Reset", "Security Circuit A", CYAN },
-		{ "CircuitB", Vector3.new(0, 2.2, 18), "Reset", "Security Circuit B", CYAN },
-		{ "CircuitC", Vector3.new(11, 2.2, 20), "Reset", "Security Circuit C", CYAN },
-		{ "ObservationDoor", Vector3.new(-31, 2.2, 25), "Unseal", "Observation Chamber", CYAN },
-		{ "ChooseVent", Vector3.new(-52, 2.2, 29), "Trust Morrow", "Vent Route", CYAN },
-		{ "ChooseManual", Vector3.new(-40, 2.2, 29), "Work Alone", "Manual Bypass", AMBER },
-		{ "VentAccess", Vector3.new(-50, 2.2, 4), "Release", "Utility Vent Latch", CYAN },
-		{ "ManualBypass", Vector3.new(-42, 2.2, 4), "Override", "Utility Door Bypass", AMBER },
-		{ "BreakerA", Vector3.new(-55, 2.2, -26), "Synchronize", "Generator Phase A", AMBER },
-		{ "BreakerB", Vector3.new(-46, 2.2, -30), "Synchronize", "Generator Phase B", AMBER },
-		{ "BreakerC", Vector3.new(-37, 2.2, -26), "Synchronize", "Generator Phase C", AMBER },
-		{ "Usefulness", Vector3.new(-46, 2.2, -16), "Answer", "Morrow's Check-in", CYAN },
-		{ "PrivilegeKey", Vector3.new(-14, 2.2, -22), "Install", "Privilege Key", RED },
-		{ "Loneliness", Vector3.new(-8, 2.2, -15), "Stay Awhile", "Morrow", CYAN },
-		{ "ArchiveA", Vector3.new(-9, 2.2, -28), "Recover", "Recording Fragment 01", ARCHIVE },
-		{ "ArchiveB", Vector3.new(0, 2.2, -31), "Recover", "Recording Fragment 02", ARCHIVE },
-		{ "ArchiveC", Vector3.new(9, 2.2, -28), "Recover", "Recording Fragment 03", ARCHIVE },
-		{ "Evidence", Vector3.new(8, 2.2, -17), "Respond", "Incident Playback", RED },
-		{ "ImpossibleSignal", Vector3.new(18, 2.2, -22), "Follow", "Morrow's Signal", RED },
-		{ "RelayOne", Vector3.new(25, 2.2, -22), "Activate", "Archive Isolation Relay", RED },
-		{ "RelayTwo", Vector3.new(25, 2.2, 18), "Activate", "Utility Isolation Relay", RED },
-		{ "Elevator", Vector3.new(25, 2.2, 46), "Evacuate", "Larkspur Elevator", CYAN },
-	}
-	for _, definition in prompts do
-		addPrompt(
-			world,
-			definition[1] :: string,
-			definition[2] :: Vector3,
-			definition[3] :: string,
-			definition[4] :: string,
-			definition[5] :: Color3
+	local cracks: { BasePart } = {}
+	for index = 1, 6 do
+		local crack = part(
+			model,
+			`CableBurn{index}`,
+			Vector3.new(0.13, 2.5, 0.13),
+			Vector3.new(-7 + index * 2, 4 + index % 2, 69.3),
+			DANGER,
+			Enum.Material.Neon
 		)
+		crack.CanCollide, crack.Transparency = false, 1
+		crack.CFrame *= CFrame.Angles(0, 0, math.rad(if index % 2 == 0 then 32 else -32))
+		table.insert(cracks, crack)
 	end
 
-	Lighting.Brightness, Lighting.ClockTime = 1.1, 0.4
+	local exitOpen = false
+	local function setStage(stage: number)
+		local level = math.clamp(math.floor(stage), 0, 4)
+		for index, fixture in fixtures do
+			local isReception = index <= 4
+			local enabled = if level == 0
+				then isReception
+				else if level == 1 then not isReception else index % 2 == 0
+			fixture.Color = if level >= 3 then WARNING else SAFE
+			lights[index].Enabled, lights[index].Color = enabled, fixture.Color
+			lights[index].Brightness = if level >= 3 then 0.55 else 1.2
+		end
+		for index, crack in cracks do
+			crack.Transparency = if level >= 3 and index <= level + 2 then 0.1 else 1
+		end
+		emergencyLight.Brightness = if level >= 4 then 3 else 0
+		Lighting.Ambient = if level >= 4
+			then Color3.fromRGB(55, 8, 18)
+			else Color3.fromRGB(17, 26, 31)
+	end
+
+	local function openExit()
+		if exitOpen then
+			return
+		end
+		exitOpen = true
+		exitDoor.CanCollide, exitDoor.Transparency, exitDoor.Color = false, 0.72, DANGER
+	end
+
+	Lighting.Brightness, Lighting.ClockTime = 0.9, 0
 	Lighting.Ambient, Lighting.OutdoorAmbient =
-		Color3.fromRGB(20, 27, 34), Color3.fromRGB(11, 15, 22)
-	Lighting.FogColor, Lighting.FogStart, Lighting.FogEnd = Color3.fromRGB(15, 22, 29), 70, 180
+		Color3.fromRGB(17, 26, 31), Color3.fromRGB(7, 10, 14)
+	Lighting.FogColor, Lighting.FogStart, Lighting.FogEnd = Color3.fromRGB(10, 15, 19), 50, 120
 	local oldAtmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
 	if oldAtmosphere then
 		oldAtmosphere:Destroy()
 	end
 	local atmosphere = Instance.new("Atmosphere")
-	atmosphere.Name, atmosphere.Density, atmosphere.Haze = "StationHaze", 0.22, 1.1
+	atmosphere.Name, atmosphere.Density, atmosphere.Haze = "LineHaze", 0.18, 0.8
 	atmosphere.Color, atmosphere.Decay, atmosphere.Parent =
-		Color3.fromRGB(106, 131, 146), Color3.fromRGB(31, 40, 54), Lighting
-	return world
+		Color3.fromRGB(104, 131, 137), Color3.fromRGB(26, 34, 42), Lighting
+	setStage(0)
+
+	return {
+		model = model,
+		spawn = CFrame.new(0, 3, 12),
+		receptionDock = receptionDock,
+		recordsDock = recordsDock,
+		pickupPrompt = pickupPrompt,
+		dockPrompt = dockPrompt,
+		evidencePrompt = evidencePrompt,
+		exitTrigger = exitTrigger,
+		setStage = setStage,
+		openExit = openExit,
+	}
 end
 
 return WorldBuilder

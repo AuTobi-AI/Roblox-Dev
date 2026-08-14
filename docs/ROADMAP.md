@@ -1,5 +1,7 @@
 # Morrow — Production Roadmap
 
+> **Reset in progress:** The room-and-console roadmap below is superseded by the conversation-first receiver prototype in [Morrow: Don't Hang Up](GIMMICK_CONCEPT.md). The immediate gate is proving natural contextual conversation, the unplug/carry/reconnect gimmick, and distinct kindness/hostility breakdowns in one 8–12 minute run.
+
 The project advances by evidence, not by feature count. Each gate must be satisfied before the next expensive layer begins.
 
 ## Phase 0 — Pre-production
@@ -191,4 +193,3 @@ Priorities:
 | Unfair pursuit | Coherent map, warnings, checkpoints, assist mode, no in-view manifestation |
 | Scope growth | Build only the vertical slice until its gates pass |
 | Model/platform change | Adapter boundary, returned-model telemetry, regression suite |
-
