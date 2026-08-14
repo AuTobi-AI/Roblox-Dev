@@ -19,6 +19,14 @@ This file records creative and technical decisions so implementation remains coh
 | Voice | Text plus designed musical sounds for the vertical slice |
 | Testing | Downloadable simulated-AI build plus private-universe native-AI test |
 
+## August 2026 concept reset
+
+- The active gimmick is **Morrow: Don't Hang Up**: Morrow inhabits a portable station receiver.
+- Dialogue choices and the glowing-console route are removed. Players type natural free-form messages.
+- The receiver speaks only while connected to a wall jack. Unplugging, carrying, and reconnecting it is the core physical verb.
+- Morrow always destabilizes and becomes dangerous. Kindness earns trust and a safer manipulation window; it does not redeem Morrow.
+- Native AI owns conversational wording and bounded current-session continuity. Authored systems still own instability, doors, pursuit, and endings.
+
 ## Creative checkpoints
 
 ### 1. Morrow's underlying truth
@@ -41,4 +49,3 @@ Ask these individually while unaffected planning or development continues:
 5. Whether the full game's most intense pursuit is frightening, tragic, or mechanically demanding
 
 For every checkpoint, Codex states its preferred option and continues with that default unless redirected.
-

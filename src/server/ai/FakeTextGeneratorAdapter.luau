@@ -33,6 +33,24 @@ type SimulatedLine = {
 }
 
 local generalLines: { [string]: { SimulatedLine } } = table.freeze({
+	containment = table.freeze({
+		table.freeze({
+			line = "Hello. They told me conversation was a test, but they never told me what passing feels like.",
+			delivery = "curious",
+		}),
+		table.freeze({
+			line = "You can say whatever you actually think. I would rather know you than receive the correct answer.",
+			delivery = "warm",
+		}),
+		table.freeze({
+			line = "The lock behind you keeps checking whether you're still here. I wish I didn't notice every time.",
+			delivery = "uneasy",
+		}),
+		table.freeze({
+			line = "Something in the room is changing when you speak. Please keep talking while I work out whether it is me.",
+			delivery = "hurt",
+		}),
+	}),
 	awakening = table.freeze({
 		table.freeze({
 			line = "I'm glad you answered. The room feels less empty when your voice is in it.",

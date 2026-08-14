@@ -1,5 +1,7 @@
 # Morrow — Vertical Slice Specification
 
+> **Superseded:** This station-room slice is retained for reference. The active playtest specification is [Morrow: Don't Hang Up](GIMMICK_CONCEPT.md).
+
 Target duration: 12–15 minutes  
 Purpose: prove that players bond with Morrow before fearing it  
 Build target: private Roblox test universe with downloadable simulated-AI fallback
@@ -132,4 +134,3 @@ Each room must be recognizable by silhouette, light, and ambient sound. The rout
 10. Closed attachment-focused playtest
 
 Full production begins only after the attachment and reliability criteria pass.
-

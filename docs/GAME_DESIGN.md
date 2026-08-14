@@ -1,5 +1,7 @@
 # Morrow — Game Design Document
 
+> **Superseded concept:** The active reset is [Morrow: Don't Hang Up](GIMMICK_CONCEPT.md). The material below is retained as a source of setting and character lore only; its long station route and puzzle structure are no longer authoritative.
+
 Status: pre-production baseline  
 Target: Roblox, single-player, first-person  
 First-play duration: 35–50 minutes  
@@ -338,4 +340,3 @@ The player destroys the transmitter and seals both of them inside. At day 137, t
 - AI outages never block progress.
 - The station remains navigable during both exploration and pursuit.
 - All endings read as intentional philosophical choices rather than good/bad scoring.
-

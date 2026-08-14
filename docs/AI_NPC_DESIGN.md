@@ -1,5 +1,7 @@
 # Morrow AI NPC Design
 
+> **Revision note:** The safety and adapter architecture below remains active. The four-window conversation schedule is superseded by the single bounded receiver conversation in [Morrow: Don't Hang Up](GIMMICK_CONCEPT.md).
+
 Status: pre-production architecture  
 Platform capability: Roblox `TextGenerator`  
 Memory scope: bounded to the current play session
@@ -231,4 +233,3 @@ Never log raw player input, generated output, context tokens, safe-fact values, 
 This design is a limited AI interaction because conversation is bounded, is one part of a broader narrative game, and has no cross-session memory. It should not be marketed as an unlimited AI friend. Authored horror intensity must still be declared accurately in the current Content Maturity questionnaire.
 
 Cross-session conversational memory would constitute extended interaction and require a Restricted label, limiting the audience to eligible age-verified adults. It is outside the initial scope.
-

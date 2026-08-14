@@ -34,12 +34,6 @@ local forbiddenFragments = table.freeze({
 	"financial advice",
 	"objective:",
 	"new objective",
-	"go to the",
-	"unlock the",
-	"press the",
-	"collect the",
-	"activate the",
-	"repair the",
 })
 
 local function trim(value: string): string
