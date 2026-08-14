@@ -2,78 +2,152 @@
 
 local RunService = game:GetService("RunService")
 
+export type Controller = {
+	model: Model,
+	root: Part,
+	prompt: ProximityPrompt,
+	setTarget: (position: Vector3) -> (),
+	setHunting: (value: boolean) -> (),
+	setThinking: (value: boolean) -> (),
+	destroy: () -> (),
+}
+
+local FRIENDLY_COLOR = Color3.fromRGB(118, 217, 202)
+local HUNT_COLOR = Color3.fromRGB(194, 32, 69)
+local FACE_COLOR = Color3.fromRGB(20, 18, 26)
 local CompanionService = {}
 
-function CompanionService.create()
+local function makeFacePart(parent: Model, name: string, size: Vector3): Part
+	local item = Instance.new("Part")
+	item.Name = name
+	item.Anchored = true
+	item.CanCollide = false
+	item.CanQuery = false
+	item.CastShadow = false
+	item.Color = FACE_COLOR
+	item.Material = Enum.Material.SmoothPlastic
+	item.Size = size
+	item.Parent = parent
+	return item
+end
+
+function CompanionService.create(): Controller
 	local model = Instance.new("Model")
-	model.Name, model.Parent = "Morrow", workspace
+	model.Name = "Morrow"
+	model.Parent = workspace
+
 	local root = Instance.new("Part")
-	root.Name, root.Anchored, root.CanCollide = "Core", true, false
-	root.Shape, root.Size, root.Color, root.Material =
-		Enum.PartType.Ball, Vector3.new(5, 5, 5), Color3.fromRGB(118, 217, 202), Enum.Material.Neon
-	root.CFrame, root.Parent, model.PrimaryPart = CFrame.new(0, 5, -15), model, root
+	root.Name = "Core"
+	root.Anchored = true
+	root.CanCollide = false
+	root.CanQuery = false
+	root.Shape = Enum.PartType.Ball
+	root.Size = Vector3.new(5, 5, 5)
+	root.Color = FRIENDLY_COLOR
+	root.Material = Enum.Material.Neon
+	root.CFrame = CFrame.new(0, 5, -15)
+	root.Parent = model
+	model.PrimaryPart = root
+
 	local glow = Instance.new("PointLight")
-	glow.Brightness, glow.Color, glow.Range, glow.Shadows, glow.Parent =
-		1.4, root.Color, 18, true, root
+	glow.Name = "Glow"
+	glow.Brightness = 1.4
+	glow.Color = FRIENDLY_COLOR
+	glow.Range = 18
+	glow.Shadows = true
+	glow.Parent = root
 
-	local face = {}
-	for _, data in
-		{
-			{ "LeftEye", Vector3.new(0.5, 0.85, 0.25) },
-			{ "RightEye", Vector3.new(0.5, 0.85, 0.25) },
-			{ "Smile", Vector3.new(1.65, 0.24, 0.25) },
-		}
-	do
-		local item = Instance.new("Part")
-		item.Name, item.Anchored, item.CanCollide, item.CastShadow =
-			data[1] :: string, true, false, false
-		item.Color, item.Material, item.Size, item.Parent =
-			Color3.fromRGB(20, 18, 26), Enum.Material.SmoothPlastic, data[2] :: Vector3, model
-		face[item.Name] = item
-	end
+	local leftEye = makeFacePart(model, "LeftEye", Vector3.new(0.5, 0.85, 0.25))
+	local rightEye = makeFacePart(model, "RightEye", Vector3.new(0.5, 0.85, 0.25))
+	local smile = makeFacePart(model, "Smile", Vector3.new(1.65, 0.24, 0.25))
+
 	local prompt = Instance.new("ProximityPrompt")
-	prompt.ActionText, prompt.ObjectText, prompt.HoldDuration, prompt.MaxActivationDistance =
-		"Talk", "Morrow", 0.25, 12
-	prompt.RequiresLineOfSight, prompt.Parent = false, root
+	prompt.Name = "TalkPrompt"
+	prompt.ActionText = "Talk"
+	prompt.ObjectText = "Morrow"
+	prompt.HoldDuration = 0.25
+	prompt.MaxActivationDistance = 12
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = root
 
-	local target: Vector3? = nil
-	local hunting, elapsed = false, 0
-	RunService.Heartbeat:Connect(function(dt)
-		elapsed += dt
-		if target then
-			local delta = target - root.Position
+	local thinkingGui = Instance.new("BillboardGui")
+	thinkingGui.Name = "ThinkingIndicator"
+	thinkingGui.AlwaysOnTop = true
+	thinkingGui.Enabled = false
+	thinkingGui.LightInfluence = 0
+	thinkingGui.Size = UDim2.fromOffset(90, 34)
+	thinkingGui.StudsOffset = Vector3.new(0, 3.5, 0)
+	thinkingGui.Parent = root
+
+	local thinkingLabel = Instance.new("TextLabel")
+	thinkingLabel.BackgroundColor3 = Color3.fromRGB(9, 15, 18)
+	thinkingLabel.BackgroundTransparency = 0.2
+	thinkingLabel.Font = Enum.Font.GothamMedium
+	thinkingLabel.Size = UDim2.fromScale(1, 1)
+	thinkingLabel.Text = "thinking…"
+	thinkingLabel.TextColor3 = Color3.fromRGB(202, 247, 239)
+	thinkingLabel.TextScaled = true
+	thinkingLabel.Parent = thinkingGui
+	local thinkingCorner = Instance.new("UICorner")
+	thinkingCorner.CornerRadius = UDim.new(0, 10)
+	thinkingCorner.Parent = thinkingLabel
+
+	local targetPosition: Vector3? = nil
+	local logicalPosition = root.Position
+	local isHunting = false
+	local elapsed = 0
+	local destroyed = false
+	local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
+		if destroyed then
+			return
+		end
+		elapsed += deltaTime
+		if targetPosition then
+			local delta = targetPosition - logicalPosition
 			if delta.Magnitude > 0.05 then
-				root.Position += delta.Unit * math.min(
-					delta.Magnitude,
-					(if hunting then 14 else 5) * dt
-				)
+				local speed = if isHunting then 14 else 5
+				logicalPosition += delta.Unit * math.min(delta.Magnitude, speed * deltaTime)
 			end
 		end
-		root.Position += Vector3.new(0, math.sin(elapsed * 2.2) * 0.004, 0)
+		root.CFrame =
+			CFrame.new(logicalPosition + Vector3.new(0, math.sin(elapsed * 2.2) * 0.08, 0))
+
 		local forward, right = root.CFrame.LookVector, root.CFrame.RightVector
-		local center = root.Position + forward * 2.35
-		face.LeftEye.CFrame =
-			CFrame.lookAt(center - right * 0.75 + Vector3.new(0, 0.55, 0), center + forward)
-		face.RightEye.CFrame =
-			CFrame.lookAt(center + right * 0.75 + Vector3.new(0, 0.55, 0), center + forward)
-		face.Smile.CFrame = CFrame.lookAt(center - Vector3.new(0, 0.65, 0), center + forward)
+		local faceCenter = root.Position + forward * 2.35
+		leftEye.CFrame =
+			CFrame.lookAt(faceCenter - right * 0.75 + Vector3.new(0, 0.55, 0), faceCenter + forward)
+		rightEye.CFrame =
+			CFrame.lookAt(faceCenter + right * 0.75 + Vector3.new(0, 0.55, 0), faceCenter + forward)
+		smile.CFrame = CFrame.lookAt(faceCenter - Vector3.new(0, 0.65, 0), faceCenter + forward)
 	end)
+
 	return {
 		model = model,
 		root = root,
 		prompt = prompt,
 		setTarget = function(position: Vector3)
-			target = position
+			targetPosition = position
 		end,
 		setHunting = function(value: boolean)
-			hunting, prompt.Enabled = value, not value
-			root.Color = if value
-				then Color3.fromRGB(194, 32, 69)
-				else Color3.fromRGB(118, 217, 202)
-			glow.Color, glow.Brightness = root.Color, if value then 3 else 1.4
-			face.Smile.Size = if value
+			isHunting = value
+			prompt.Enabled = not value
+			root.Color = if value then HUNT_COLOR else FRIENDLY_COLOR
+			glow.Color = root.Color
+			glow.Brightness = if value then 3 else 1.4
+			smile.Size = if value
 				then Vector3.new(2.8, 0.38, 0.3)
 				else Vector3.new(1.65, 0.24, 0.25)
+		end,
+		setThinking = function(value: boolean)
+			thinkingGui.Enabled = value
+		end,
+		destroy = function()
+			if destroyed then
+				return
+			end
+			destroyed = true
+			heartbeatConnection:Disconnect()
+			model:Destroy()
 		end,
 	}
 end

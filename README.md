@@ -10,7 +10,7 @@ A Codex-first workspace for building a Roblox experience with source-controlled 
 4. Codex commits and pushes the tested source, publishes the `.rbxl` as a GitHub Release asset, and gives you its browser download link.
 5. You open the file in Roblox Studio, press **Play**, and report what you want changed.
 
-Roblox binary place files use the `.rbxl` extension. Generated builds are disposable and are not committed; the files in `src/` remain the source of truth.
+Roblox binary place files use the `.rbxl` extension. Files in `src/` remain the source of truth; approved versioned validation builds may also be published under `build/` solely for direct testing downloads.
 
 ## What is included
 
@@ -36,6 +36,8 @@ Roblox binary place files use the `.rbxl` extension. Generated builds are dispos
 
 You do not need Rojo or the command-line tools to test builds. Those tools are only needed by Codex or a developer changing the source locally.
 
+Downloaded builds use deterministic simulated AI and display a `SIMULATED AI` badge. To test Roblox's live native AI, publish the place into a private test experience, complete its AI interaction and content-maturity settings, and run it there. Native failures automatically use simulation or authored fallback without blocking the game.
+
 ## Local developer setup
 
 Install [Rokit](https://github.com/rojo-rbx/rokit), run `rokit install`, and use `rojo build -o build/RobloxDev.rbxl` to produce a place. Rojo live sync remains available for developers, but it is not part of the normal user testing workflow.
@@ -48,8 +50,8 @@ selene src
 rojo build -o build/RobloxDev.rbxl
 ```
 
-Run `stylua src` to format source files. Generated `.rbxl` files belong in `build/` and are not committed. Successful GitHub Actions runs also publish the place as a downloadable `RobloxDev-place` artifact.
+Run `stylua src` to format source files. Local generated `.rbxl` files belong in `build/` and are ignored by default. Codex publishes selected tested builds, and successful GitHub Actions runs also expose `RobloxDev-place` as an artifact.
 
 ## Current phase
 
-The project is in pre-production. The design package in `docs/` is authoritative. Implementation resumes with the native-AI policy/API spike and vertical slice only after the active creative checkpoints are settled.
+Production began with v0.3. The bounded dialogue architecture, native and simulated AI adapters, server-owned story/relationship foundations, safety controls, and cross-device conversation interface are implemented. The next milestone replaces the prototype woodland with the grayboxed Larkspur vertical-slice rooms and objectives.

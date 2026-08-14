@@ -2,8 +2,11 @@
 
 return table.freeze({
 	Name = "Morrow",
-	Version = "0.2.0",
+	Version = "0.3.0",
 	RequiredShards = 4,
 	RequiredTalks = 3,
 	HuntDuration = 45,
+	InternalBuild = true,
+	UseNativeAIInPublishedExperiences = true,
+	ConversationRange = 12,
 })
