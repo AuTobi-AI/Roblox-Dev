@@ -1,0 +1,22 @@
+# Generated Roblox places and models
+/build/
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+
+# Package output
+/Packages/
+/ServerPackages/
+
+# Tool and editor state
+/.rokit/
+/.vscode/*.log
+.DS_Store
+Thumbs.db
+
+# Secrets and local environment
+.env
+.env.*
+*.pem
+

@@ -1,0 +1,22 @@
+name: Build and validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CompeyDev/setup-rokit@v0.1.2
+      - run: stylua --check src
+      - run: selene src
+      - run: mkdir -p build && rojo build -o build/RobloxDev.rbxl
+      - name: Upload playable place
+        uses: actions/upload-artifact@v4
+        with:
+          name: RobloxDev-place
+          path: build/RobloxDev.rbxl
+          if-no-files-found: error

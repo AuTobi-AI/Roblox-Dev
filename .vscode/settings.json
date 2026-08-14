@@ -1,0 +1,15 @@
+{
+  "[lua]": {
+    "editor.defaultFormatter": "JohnnyMorganz.stylua",
+    "editor.formatOnSave": true
+  },
+  "[luau]": {
+    "editor.defaultFormatter": "JohnnyMorganz.stylua",
+    "editor.formatOnSave": true
+  },
+  "files.exclude": {
+    "**/*.rbxl": true,
+    "**/*.rbxlx": true
+  }
+}
+
